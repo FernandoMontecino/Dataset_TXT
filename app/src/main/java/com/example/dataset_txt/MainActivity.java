@@ -1,6 +1,7 @@
 package com.example.dataset_txt;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -10,6 +11,7 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 //import android.app.Activity;
@@ -49,11 +51,13 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     double Boton1, Boton2;
     //double roll,pitch,yaw;
     long time;
-    int CD=0;
+    int CD;    //Con CD vamos a indicar que la toma de datos sera cada cuatro muestras ya que es como se repiten estas mismas
+    int i=1;    //Con i va a ser para etiquetar textoAsalvar
+    int N_dataset=0;    // Sera para que cada mil datos imprimamos textoAsalvar en el TXT
 
 
-    String textoASalvar;
-
+    String textoASalvar,Vaciarcadena;
+    String NombreAchivo;
     LocationManager locationManager;
     LocationListener locationListener;
     Location location;
@@ -74,6 +78,22 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 guardar();
             }
         });
+        // Permisos GPS
+        /*if (ContextCompat.checkSelfPermission(
+                MainActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) ==
+                PackageManager.PERMISSION_GRANTED) {
+            // You can use the API that requires the permission.
+
+        } else if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_FINE_LOCATION)) {
+            // In an educational UI, explain to the user why your app requires this
+            // permission for a specific feature to behave as expected. In this UI,
+            // include a "cancel" or "no thanks" button that allows the user to
+            // continue using your app without granting the permission.
+        } else {
+            // You can directly ask for the permission.
+            // The registered ActivityResultCallback gets the result of this request.
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
+        }*/
 
 
     }
@@ -81,14 +101,15 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     public void Tomardatos(View view) throws IOException {
         Boton1 = 1;
         Boton2 = 0;
-
-        File file = new File(getExternalFilesDir(null), "Datos.txt");
+        CD=0;
+        String NombreAchivo = new String("Datos_"+ i);
+        File file =  new File(getExternalFilesDir(null), NombreAchivo);
         //Creo un flujo de salida para poder escribir datos en el file:
         FileOutputStream outputStream = null;
 
         textoASalvar = new String("Timestamp, ax, ay, az, gx, gy, gz, Latitud, Longitud  \n");
         outputStream = new FileOutputStream(file);
-        outputStream.write(textoASalvar.getBytes());
+        outputStream.write(textoASalvar .getBytes());
         Toast.makeText(getApplicationContext(),"INICIO DE TOMA DE DATOS",Toast.LENGTH_LONG).show();
 
     }
@@ -96,7 +117,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         Boton1 = 0;
         Boton2 = 1;
 
-        File file = new File(getExternalFilesDir(null), "Datos.txt");
+        String NombreAchivo = new String("Datos_"+ i);
+        File file =  new File(getExternalFilesDir(null), NombreAchivo);
         //Creo un flujo de salida para poder escribir datos en el file:
         FileOutputStream outputStream = null;
 
@@ -166,6 +188,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     // consider storing these readings as unit vectors.
 
 
+    @RequiresApi(api = Build.VERSION_CODES.M)
     @Override
     public void onSensorChanged(SensorEvent sensorEvent) {
         // Del GPS
@@ -209,8 +232,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         } else if (sensorEvent.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) {
             System.arraycopy(sensorEvent.values, 0, magnetometerReading,
                     0, magnetometerReading.length);
-        }
-        else if (sensorEvent.sensor.getType() == Sensor.TYPE_GYROSCOPE) {
+        } else if (sensorEvent.sensor.getType() == Sensor.TYPE_GYROSCOPE) {
             System.arraycopy(sensorEvent.values, 0, gyroscopeReading,
                     0, gyroscopeReading.length);
         }
@@ -225,10 +247,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         mx = magnetometerReading[0];
         my = magnetometerReading[1];
         mz = magnetometerReading[2];
-        gx= gyroscopeReading[0];
-        gy= gyroscopeReading[1];
-        gz= gyroscopeReading[2];
-        CD=CD+1;
+        gx = gyroscopeReading[0];
+        gy = gyroscopeReading[1];
+        gz = gyroscopeReading[2];
+        CD = CD + 1;
 
 
         // Ya teniendo los valores podemos calcular los angulos
@@ -247,22 +269,45 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         //SENSIBLE
 
 
-
-
-
         //texto.setText("");
         //texto.append("\n" + timeStamp + "\n" + "Roll:" + roll + "\n" + "Pitch:" + pitch + "\n" + "Yaw:" +yaw);
         //+"\n"+ "Campo MX:" + mx + "\n" + "Campo MY:" + my + "\n" + "Campo MZ:" + mz +
         //  "\n" + "GiroX:" + gx + "\n" + "Giro Y:" + gy + "\n" + "Giro Z:" + gz);
+        //CD == 3
 
-        if (Boton1==1 && Boton2==0 && CD==3) {
-            CD=0;
-            textoASalvar= textoASalvar+timeStamp+", "+ax+", " +", "+ay+", " +", "+az+", " +", " +gx+", " +", "+gy+", " +", "+gz+", " +", "
-                    +Latitud+", " +", "+Longitud+", " +"\n";
+        if (Boton1 == 1 && Boton2 == 0 && CD == 3 ) {
+            CD = 0;
+            textoASalvar = textoASalvar + timeStamp + ", " + ax + ", " + ", " + ay + ", " + ", " + az + ", " + ", " + gx + ", " + ", " + gy + ", " + ", " + gz + ", " + ", "
+                    + Latitud + ", " + ", " + Longitud + ", " + "\n";
+            N_dataset=N_dataset+1;
 
+            if (N_dataset == 1000) {
+                String NombreAchivo = new String("Datos_"+ i);
+                File file =  new File(getExternalFilesDir(null), NombreAchivo);
+                //Creo un flujo de salida para poder escribir datos en el file:
+                FileOutputStream outputStream = null;
+
+                try {
+                    outputStream = new FileOutputStream(file);
+                    outputStream.write(textoASalvar.getBytes());
+                } catch (java.io.IOException e) {
+                    e.printStackTrace();
+
+                    Toast.makeText(getApplicationContext(), "NO OK", Toast.LENGTH_LONG).show();
+                    try {
+                        outputStream.close();
+                    } catch (IOException ex) {
+                        ex.printStackTrace();
+                    }
+                }
+                i=i+1;
+                N_dataset=0;
+                Vaciarcadena= "";
+                textoASalvar= Vaciarcadena;
+
+            }
 
         }
-
     }
 
 }
