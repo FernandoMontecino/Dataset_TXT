@@ -49,6 +49,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     double Boton1, Boton2;
     //double roll,pitch,yaw;
     long time;
+    int CD=0;
 
 
     String textoASalvar;
@@ -85,7 +86,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         //Creo un flujo de salida para poder escribir datos en el file:
         FileOutputStream outputStream = null;
 
-        textoASalvar = new String("Timestamp, ax, ay, az, gx, gz, Latitud, Longitud  \n");
+        textoASalvar = new String("Timestamp, ax, ay, az, gx, gy, gz, Latitud, Longitud  \n");
         outputStream = new FileOutputStream(file);
         outputStream.write(textoASalvar.getBytes());
         Toast.makeText(getApplicationContext(),"INICIO DE TOMA DE DATOS",Toast.LENGTH_LONG).show();
@@ -227,6 +228,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         gx= gyroscopeReading[0];
         gy= gyroscopeReading[1];
         gz= gyroscopeReading[2];
+        CD=CD+1;
 
 
         // Ya teniendo los valores podemos calcular los angulos
@@ -253,8 +255,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         //+"\n"+ "Campo MX:" + mx + "\n" + "Campo MY:" + my + "\n" + "Campo MZ:" + mz +
         //  "\n" + "GiroX:" + gx + "\n" + "Giro Y:" + gy + "\n" + "Giro Z:" + gz);
 
-        if (Boton1==1 && Boton2==0) {
-
+        if (Boton1==1 && Boton2==0 && CD==3) {
+            CD=0;
             textoASalvar= textoASalvar+timeStamp+", "+ax+", " +", "+ay+", " +", "+az+", " +", " +gx+", " +", "+gy+", " +", "+gz+", " +", "
                     +Latitud+", " +", "+Longitud+", " +"\n";
 
