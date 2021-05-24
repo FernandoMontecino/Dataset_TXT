@@ -13,6 +13,7 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.renderscript.ScriptGroup;
 import android.view.View;
 //import android.app.Activity;
 import android.content.Context;
@@ -21,12 +22,21 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -36,6 +46,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     Button btnGuardarExcel;
 
+
     private SensorManager sensorManager;
     private final float[] accelerometerReading = new float[3];
     private final float[] magnetometerReading = new float[3];
@@ -44,13 +55,26 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     private final float[] rotationMatrix = new float[9];
     private final float[] orientationAngles = new float[3];
-    TextView texto;
+    TextView texto2,texto3;
+    Writer output;
 
-    double ax, ay, az, mx, my, mz, gx, gy, gz, Latitud, Longitud, xh, yh;
+    double ax, ay, az, mx, my, mz, gx, gy, gz;
+    double Latitud, Longitud, xh, yh;
+    String timeStamp;
+    /*String[] time= new String[10000];
+    String[] textoASalvar = new String[10000];
+    double[] ax= new double[10000];
+    double[] ay= new double[10000];
+    double[] az= new double[10000];
+    double[] gx= new double[10000];
+    double[] gy= new double[10000];
+    double[] gz= new double[10000];
+    double[] Lat= new double[10000];
+    double[] Long= new double[10000];*/
+
     int fila = 0;
     double Boton1, Boton2;
     //double roll,pitch,yaw;
-    long time;
     int CD;    //Con CD vamos a indicar que la toma de datos sera cada cuatro muestras ya que es como se repiten estas mismas
     int i=1;    //Con i va a ser para etiquetar textoAsalvar
     int N_dataset=0;    // Sera para que cada mil datos imprimamos textoAsalvar en el TXT
@@ -69,7 +93,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         setContentView(R.layout.activity_main);
 
         btnGuardarExcel = findViewById(R.id.btnGuardarExcel);
-        texto = (TextView) findViewById(R.id.texto);
+        texto2 = (TextView) findViewById(R.id.texto2);
+        texto3 = (TextView) findViewById(R.id.texto3);
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
 
         btnGuardarExcel.setOnClickListener(new View.OnClickListener() {
@@ -101,23 +126,45 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     public void Tomardatos(View view) throws IOException {
         Boton1 = 1;
         Boton2 = 0;
-        CD=0;
-        String NombreAchivo = new String("Datos_"+ i);
+        String NombreAchivo = new String("Datos_"+ i+".txt");
         File file =  new File(getExternalFilesDir(null), NombreAchivo);
-        //Creo un flujo de salida para poder escribir datos en el file:
         FileOutputStream outputStream = null;
-
-        textoASalvar = new String("Timestamp, ax, ay, az, gx, gy, gz, Latitud, Longitud  \n");
+        textoASalvar= new String("Timestamp, ax, ay, az, gx, gy, gz, Latitud, Longitud  \n");
         outputStream = new FileOutputStream(file);
         outputStream.write(textoASalvar .getBytes());
+        outputStream.close();
+
+        texto2.setText("");
+        texto2.append("Se inicio la aplicación en el tiempo:" +"\n"+ new SimpleDateFormat("dd/MM/yyyy_HH:mm:ss:ms").format(new Date()));
+
+
+        /*FileInputStream inputStream = null;
+        inputStream = new FileInputStream(file);
+        inputStream.read(textoASalvar.getBytes());
+
+        textoASalvar= textoASalvar +"\n"+ text;*/
+
+        /*BufferedReader aux= new BufferedReader(new FileReader(file));
+        String text= aux.readLine();
+        textoASalvar= textoASalvar + text;
+
+        outputStream = new FileOutputStream(file);
+        outputStream.write(textoASalvar.getBytes());
+        outputStream.close();*/
+
+
         Toast.makeText(getApplicationContext(),"INICIO DE TOMA DE DATOS",Toast.LENGTH_LONG).show();
 
     }
     public void guardar() {
         Boton1 = 0;
         Boton2 = 1;
+        /*
 
-        String NombreAchivo = new String("Datos_"+ i);
+        // Lo primero que va a hacer es generar el String;
+        Toast.makeText(getApplicationContext(),"PROCESANDO LOS DATOS",Toast.LENGTH_LONG).show();
+
+        String NombreAchivo = new String("Datos_"+ i+".txt");
         File file =  new File(getExternalFilesDir(null), NombreAchivo);
         //Creo un flujo de salida para poder escribir datos en el file:
         FileOutputStream outputStream = null;
@@ -125,6 +172,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         try {
             outputStream = new FileOutputStream(file);
             outputStream.write(textoASalvar.getBytes());
+            outputStream.close();
             Toast.makeText(getApplicationContext(),"FIN DE TOMA DE DATOS",Toast.LENGTH_LONG).show();
         } catch (java.io.IOException e) {
             e.printStackTrace();
@@ -136,6 +184,14 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 ex.printStackTrace();
             }
         }
+
+         */
+        texto3.setText("");
+        texto3.append("Se finalizo la toma de datos" + "\n"+ new SimpleDateFormat("dd/MM/yyyy_HH:mm:ss:ms").format(new Date())+"\n"+"La cantidad de datos son:"+N_dataset );
+        Toast.makeText(getApplicationContext(),"FIN DE TOMA DE DATOS",Toast.LENGTH_LONG).show();
+
+
+
 
 
     }
@@ -161,7 +217,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         Sensor accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         if (accelerometer != null) {
             sensorManager.registerListener(this, accelerometer,
-                    SensorManager.SENSOR_DELAY_NORMAL, SensorManager.SENSOR_DELAY_NORMAL);
+                    SensorManager.SENSOR_DELAY_NORMAL);
         }
         Sensor magneticField = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
         if (magneticField != null) {
@@ -192,7 +248,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     @Override
     public void onSensorChanged(SensorEvent sensorEvent) {
         // Del GPS
-        LocationManager locationManager = (LocationManager) MainActivity.this.getSystemService(Context.LOCATION_SERVICE);
+        /*LocationManager locationManager = (LocationManager) MainActivity.this.getSystemService(Context.LOCATION_SERVICE);
 
         LocationListener locationListener = new LocationListener() {
             public void onLocation(Location location) {
@@ -224,7 +280,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             } else {
                 ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
             }
-        }
+        }*/
         //
         if (sensorEvent.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
             System.arraycopy(sensorEvent.values, 0, accelerometerReading,
@@ -238,51 +294,63 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         }
 
         //Etiqueta de tiempo para los sensores;
-        String timeStamp = new SimpleDateFormat("dd/MM/yyyy_HH:mm:ss:ms").format(new Date());
-        //time = new Date().getTime();
-
-        ax = accelerometerReading[0];
-        ay = accelerometerReading[1];
-        az = accelerometerReading[2];
-        mx = magnetometerReading[0];
-        my = magnetometerReading[1];
-        mz = magnetometerReading[2];
-        gx = gyroscopeReading[0];
-        gy = gyroscopeReading[1];
-        gz = gyroscopeReading[2];
-        CD = CD + 1;
 
 
-        // Ya teniendo los valores podemos calcular los angulos
-        /*roll = Math.toDegrees(Math.atan(ax/az));
-        pitch = Math.toDegrees(Math.atan(ay/az));
-        //Estimación de yaw con magnetometro
-        xh=mx * Math.toDegrees(Math.cos(roll))-my * Math.toDegrees(Math.sin(roll)) * Math.toDegrees(Math.sin(pitch))-
-                mz * Math.toDegrees(Math.sin(roll)) * Math.toDegrees(Math.cos(pitch));
-        yh=my * Math.toDegrees(Math.cos(pitch))-mz * Math.toDegrees(Math.sin(pitch));
-        yaw= Math.toDegrees(Math.atan2(xh,yh));*/
 
-        //TOMO LOS VALORES DE LOS ACELEROMETROS SOLAMENTE, PODRIAMOS TOMAR LOS VALORES DE ROLL, PITCH
-        // Y YAW O HACER EL ANALISIS DESPUÉS
-        //CON RESPECTO AL TIMESTAMP POR AHI HABRIA QUE VERLO DADO CAMBIA CADA CUATRO VALORES
-        // OTRA QUE SE OCURRE ES TOMAR LAS FOTOS CADA 1 SEGUNDO, NO YA QUE NO SE SI ES NECESARIO TAN
-        //SENSIBLE
-
-
-        //texto.setText("");
-        //texto.append("\n" + timeStamp + "\n" + "Roll:" + roll + "\n" + "Pitch:" + pitch + "\n" + "Yaw:" +yaw);
-        //+"\n"+ "Campo MX:" + mx + "\n" + "Campo MY:" + my + "\n" + "Campo MZ:" + mz +
-        //  "\n" + "GiroX:" + gx + "\n" + "Giro Y:" + gy + "\n" + "Giro Z:" + gz);
         //CD == 3
 
-        if (Boton1 == 1 && Boton2 == 0 && CD == 3 ) {
-            CD = 0;
-            textoASalvar = textoASalvar + timeStamp + ", " + ax + ", " + ", " + ay + ", " + ", " + az + ", " + ", " + gx + ", " + ", " + gy + ", " + ", " + gz + ", " + ", "
-                    + Latitud + ", " + ", " + Longitud + ", " + "\n";
-            N_dataset=N_dataset+1;
+        if (Boton1 == 1 && Boton2 == 0 ) {
+            timeStamp = new SimpleDateFormat("dd/MM/yyyy_HH:mm:ss:ms").format(new Date());
+            ax = accelerometerReading[0];
+            ay= accelerometerReading[1];
+            az = accelerometerReading[2];
+            mx = magnetometerReading[0];
+            my = magnetometerReading[1];
+            mz = magnetometerReading[2];
+            gx = gyroscopeReading[0];
+            gy = gyroscopeReading[1];
+            gz = gyroscopeReading[2];
 
-            if (N_dataset == 1000) {
-                String NombreAchivo = new String("Datos_"+ i);
+            textoASalvar = timeStamp + ", " + ax + ", " +  ay + ", " + az + ", " + gx + ", " + gy + ", " + gz + ", "
+                    /*+ Latitud + ", " + Longitud + ", "*/ + "\n";
+            String NombreAchivo = new String("Datos_"+ i+".txt");
+            File file =  new File(getExternalFilesDir(null), NombreAchivo);
+            //Creo un flujo de salida para poder escribir datos en el file:
+            FileOutputStream outputStream = null;
+            try {
+                //BufferedReader aux= new BufferedReader(new FileReader(file));
+                //String text= aux.readLine();
+                //textoASalvar= text+"\n"+textoASalvar ;
+                output = new BufferedWriter(new FileWriter(file, true));
+                output.append(textoASalvar);
+                output.close();
+                N_dataset=N_dataset+1;
+
+                /*outputStream = new FileOutputStream(file);
+                outputStream.write(textoASalvar.getBytes());
+                outputStream.close();
+
+                 */
+            }catch (java.io.IOException e) {
+                e.printStackTrace();
+                Boton1=0;
+                Boton2=1;
+                texto3.setText("");
+                texto3.append("Se produjeron errores en el tiempo:" + "\n"+ new SimpleDateFormat("dd/MM/yyyy_HH:mm:ss:ms").format(new Date())+"\n"+"La cantidad de datos son:"+N_dataset );
+                Toast.makeText(getApplicationContext(),"FIN DE TOMA DE DATOS",Toast.LENGTH_LONG).show();
+                try {
+                    outputStream.close();
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
+            }
+
+            if (N_dataset == 10000) {
+                Boton1 = 0;
+                Boton2 = 1;
+            }
+            /*
+                String NombreAchivo = new String("Datos_"+ i+".txt");
                 File file =  new File(getExternalFilesDir(null), NombreAchivo);
                 //Creo un flujo de salida para poder escribir datos en el file:
                 FileOutputStream outputStream = null;
@@ -290,6 +358,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 try {
                     outputStream = new FileOutputStream(file);
                     outputStream.write(textoASalvar.getBytes());
+                    outputStream.close();
                 } catch (java.io.IOException e) {
                     e.printStackTrace();
 
@@ -305,9 +374,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 Vaciarcadena= "";
                 textoASalvar= Vaciarcadena;
 
-            }
+            }*/
+
+
 
         }
+
     }
 
 }
