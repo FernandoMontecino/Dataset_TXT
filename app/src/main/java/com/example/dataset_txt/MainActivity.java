@@ -34,23 +34,27 @@ import java.io.Writer;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-public class MainActivity extends AppCompatActivity implements SensorEventListener, LocationListener {
+public class MainActivity extends AppCompatActivity implements SensorEventListener,LocationListener {
 
     Button btnGuardarExcel;
 
     private SensorManager sensorManager;
-    private final float[] ac = new float[3];
-    private final float[] gy = new float[3];
+    int limitevectores=1000000;
+    private final float[][] ac = new float[3][limitevectores];
+    private final float[][] gy = new float[3][limitevectores];
+    double [][] GPS = new double[2][limitevectores];
+
+    String[] TSTAMP = new String [limitevectores];
 
     TextView texto2, texto3, texto4;
     Writer output;
-    double Latitud, Longitud;
-    String timeStamp;
+
     double Boton1, Boton2;
     int N_dataset = 0;    // Sera para que cada mil datos imprimamos textoAsalvar en el TXT
+    int j=0; //puntero para los vectores
 
 
-    String textoASalvar;
+    String textoASalvar,NombreAchivo,timeStamp_carpeta;
     //String NombreAchivo;
     LocationManager locationManager;
     private String provider;
@@ -58,7 +62,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     //Minimo tiempo para updates en Milisegundos
     private static final long MIN_CAMBIO_DISTANCIA_PARA_UPDATES = 1; // 1 metros
     //Minimo tiempo para updates en Milisegundos
-    private static final long MIN_TIEMPO_ENTRE_UPDATES = 1000; // 1 segundo
+    private static final long MIN_TIEMPO_ENTRE_UPDATES = 100; // 0,1 segundo
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -120,14 +124,21 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         Boton1 = 1;
         Boton2 = 0;
         //String NombreAchivo = new String("Datos_" + i + ".txt");
-        File file = new File(getExternalFilesDir(null), "DATOS.txt");
-        FileOutputStream outputStream;
-        textoASalvar ="Timestamp, ax, ay, az, gx, gy, gz, Latitud, Longitud  \n";
-        outputStream = new FileOutputStream(file);
-        outputStream.write(textoASalvar.getBytes());
-        outputStream.close();
-        texto2.setText("");
-        texto2.append("Se inicio la aplicación en el tiempo:"  + "\n" + new SimpleDateFormat("dd/MM/yyyy_HH:mm:ss.SSSSSSS").format(new Date()));
+        try {
+            timeStamp_carpeta= new SimpleDateFormat("dd_MM_yyyy_HH_mm_ss").format(new Date());
+            NombreAchivo = new String("Datos_" + timeStamp_carpeta+ ".txt");
+            File file = new File(getExternalFilesDir(null), NombreAchivo);
+            FileOutputStream outputStream;
+            textoASalvar = "Timestamp, ax, ay, az, gx, gy, gz, Latitud, Longitud  \n";
+            outputStream = new FileOutputStream(file);
+            outputStream.write(textoASalvar.getBytes());
+            outputStream.close();
+            //texto2.setText("");
+            texto2.append("SE INICIO LA TOMA DE DATOS");
+        } catch (Exception e){
+            System.out.println("Error");
+        }
+
 
     }
 
@@ -135,9 +146,22 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         Boton1 = 0;
         Boton2 = 1;
 
+        //texto3.setText("");
+        //texto3.append("Se finalizo la toma de datos" + "\n" + new SimpleDateFormat("dd/MM/yyyy_HH:mm:ss.SSSSSSS").format(new Date()) + "\n" + "La cantidad de datos son:" + N_dataset);
+        for (int j=0;j<limitevectores; j++){
+            //timeStamp = new SimpleDateFormat("dd/MM/yyyy_HH:mm:ss.SSSSSSS").format(new Date());
+            if (TSTAMP[j]==null){
+                break;
+            }
+                textoASalvar = TSTAMP[j] + ";" + ac[0][j] + ";" + ac[1][j] + ";" + ac[2][j] + ";" + gy[0][j] + ";" + gy[1][j] + ";" + gy[2][j] + ";"
+                        + GPS[0][j] + ";" + GPS[1][j] + ";" + "\n";
+                ImprimoDatos();
+                textoASalvar = null;
+
+        }
         texto3.setText("");
-        texto3.append("Se finalizo la toma de datos" + "\n" + new SimpleDateFormat("dd/MM/yyyy_HH:mm:ss.SSSSSSS").format(new Date()) + "\n" + "La cantidad de datos son:" + N_dataset);
-        Toast.makeText(getApplicationContext(), "FIN DE TOMA DE DATOS", Toast.LENGTH_LONG).show();
+        texto3.append("DATOS GUARDADOS EXITOSAMENTE");
+
 
     }
 
@@ -162,12 +186,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         Sensor accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         if (accelerometer != null) {
             sensorManager.registerListener(this, accelerometer,
-                    SensorManager.SENSOR_DELAY_NORMAL);
+                    SensorManager.SENSOR_DELAY_FASTEST);
         }
         Sensor gyroscope = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
         if (gyroscope != null) {
             sensorManager.registerListener(this, gyroscope,
-                    SensorManager.SENSOR_DELAY_NORMAL);
+                    SensorManager.SENSOR_DELAY_FASTEST);
         }
         //GPS
         if (ContextCompat.checkSelfPermission(
@@ -199,7 +223,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         super.onPause();
 
         sensorManager.unregisterListener(this);
-        locationManager.removeUpdates(this);
+        //locationManager.removeUpdates(this);
 
     }
 
@@ -207,33 +231,46 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     @Override
     public void onSensorChanged(SensorEvent sensorEvent) {
 
-        if (Boton1 == 1 && Boton2 == 0) {
+        if (Boton1 == 1 && Boton2 == 0 && j<limitevectores) {
 
             if (sensorEvent.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
-                System.arraycopy(sensorEvent.values, 0, ac,
-                        0, ac.length);
+                //System.arraycopy(sensorEvent.values,0, ac[j], 0, ac.length);
+                TSTAMP [j] = new SimpleDateFormat("dd/MM/yyyy_HH:mm:ss.SSSSSSS").format(new Date());
+                ac [0][j] = sensorEvent.values[0];
+                ac [1][j] = sensorEvent.values[1];
+                ac [2][j] = sensorEvent.values[2];
+                j++;
                 // Aca directamente lo guardo
-                timeStamp = new SimpleDateFormat("dd/MM/yyyy_HH:mm:ss.SSSSSSS").format(new Date());
+                /*timeStamp = new SimpleDateFormat("dd/MM/yyyy_HH:mm:ss.SSSSSSS").format(new Date());
                 textoASalvar = timeStamp + "," + ac[0] + "," + ac[1] + "," + ac[2] + "," + " " + "," + " " + "," + " " + ","
-                        + " "+ "," + " " + "," + "\n";
-                ImprimoDatos();
+                        + " " + "," + " " + "," + "\n";
+                ImprimoDatos();*/
+            }
 
-            }
             if (sensorEvent.sensor.getType() == Sensor.TYPE_GYROSCOPE) {
-                System.arraycopy(sensorEvent.values, 0, gy,
-                        0, gy.length);
-                timeStamp = new SimpleDateFormat("dd/MM/yyyy_HH:mm:ss.SSSSSSS").format(new Date());
+                //System.arraycopy(sensorEvent.values, 0, gy,0, gy.length);
+                TSTAMP [j] = new SimpleDateFormat("dd/MM/yyyy_HH:mm:ss.SSSSSSS").format(new Date());
+                gy [0][j]= sensorEvent.values[0];
+                gy [1][j]= sensorEvent.values[1];
+                gy [2][j]= sensorEvent.values[2];
+                j++;
+
+                /*timeStamp = new SimpleDateFormat("dd/MM/yyyy_HH:mm:ss.SSSSSSS").format(new Date());
                 textoASalvar = timeStamp + "," + "" + "," + " " + "," + " " + "," + gy[0] + "," + gy[1] + "," + gy[2] + ","
-                        + " "+ ", " + " " + ", " + "\n";
-                ImprimoDatos();
+                        + " " + ", " + " " + ", " + "\n";
+                ImprimoDatos();*/
             }
+        } else if(Boton1 == 1 && Boton2 == 0 && j>=limitevectores){
+            Boton1=0;Boton2=1;
+            texto2.append("FIN DE TOMA DE DATOS, PRESIONE GUARDAR PARA TERMINAR EL PROCESO");
+
+            //Toast.makeText(getApplicationContext(), "FIN DE TOMA DE DATOS, PRESIONE GUARDAR PARA TERMINAR EL PROCESO", Toast.LENGTH_LONG).show();
         }
     }
 
     public void ImprimoDatos() {
         //String NombreAchivo = new String("Datos_" + i + ".txt");
-        File file = new File(getExternalFilesDir(null), "DATOS.txt");
-        //Creo un flujo de salida para poder escribir datos en el file:
+        File file = new File(getExternalFilesDir(null), NombreAchivo);        //Creo un flujo de salida para poder escribir datos en el file:
         FileOutputStream outputStream = null;
         try {
             output = new BufferedWriter(new FileWriter(file, true));
@@ -264,15 +301,25 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     @Override
     public void onLocationChanged(@NonNull Location location) {
-       Latitud = (double) (location.getLatitude());
-       Longitud = (double) (location.getLongitude());
-        if (Boton1 == 1 && Boton2 == 0) {
-            timeStamp = new SimpleDateFormat("dd/MM/yyyy_HH:mm:ss.SSSSSSS").format(new Date());
+        double Latitud, Longitud;
+        Latitud= location.getLatitude();
+        Longitud= location.getLongitude();
+        if (Boton1 == 1 && Boton2 == 0 && j<limitevectores) {
+            TSTAMP [j] = new SimpleDateFormat("dd/MM/yyyy_HH:mm:ss.SSSSSSS").format(new Date());
+            GPS[0][j] = Latitud;
+            GPS[1][j] = Longitud;
+            j++;
+
+            /*timeStamp = new SimpleDateFormat("dd/MM/yyyy_HH:mm:ss.SSSSSSS").format(new Date());
             textoASalvar = timeStamp + ", " + " " + ", " + " " + ", " + " " + ", " + " " + ", " + " " + ", " + "" + ", "
                     + Latitud + ", " + Longitud  + "\n";
-            ImprimoDatos();
-        }
+            ImprimoDatos();*/
+        } else if(Boton1 == 1 && Boton2 == 0 && j>=limitevectores){
+            Boton1=0;Boton2=1;
+            texto2.append("FIN DE TOMA DE DATOS, PRESIONE GUARDAR PARA TERMINAR EL PROCESO");
 
+            //Toast.makeText(getApplicationContext(), "FIN DE TOMA DE DATOS, PRESIONE GUARDAR PARA TERMINAR EL PROCESO", Toast.LENGTH_LONG).show();
+        }
     }
 }
 

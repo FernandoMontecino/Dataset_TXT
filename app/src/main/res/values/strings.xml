@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">Dataset_TXT</string>
+    <string name="guardar_datos">GUARDAR DATOS</string>
+    <string name="tomar_datos">Tomar datos</string>
 </resources>
