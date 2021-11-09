@@ -1,0 +1,13 @@
+CANTIDAD DE DATOS:
+100000
+
+Minimo de cambios de distancia para Updates:
+1
+
+Minimo tiempo entre Updates:
+100
+
+Velocidad de la toma de muestras del gyroscopo y acelerometro(SENSOR DELAY FASTED=0; SENSOR DELAY GAME=1; SENSOR DELAY UI=2; SENSOR DELAY NORMAL=3):
+0
+
+

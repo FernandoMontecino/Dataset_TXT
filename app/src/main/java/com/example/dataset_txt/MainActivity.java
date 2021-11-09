@@ -1,35 +1,38 @@
 package com.example.dataset_txt;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.RequiresApi;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
-
 import android.Manifest;
+import android.content.Context;
 import android.content.pm.PackageManager;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.location.Criteria;
-import android.location.GpsStatus;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
-import android.content.Context;
-import android.hardware.Sensor;
-import android.hardware.SensorEvent;
-import android.hardware.SensorEventListener;
-import android.hardware.SensorManager;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.Writer;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -37,14 +40,14 @@ import java.util.Date;
 public class MainActivity extends AppCompatActivity implements SensorEventListener,LocationListener {
 
     Button btnGuardarExcel;
+    int limitevectores=1000000;
+    final float[][] ac = new float[3][limitevectores];
+    final float[][] gy = new float[3][limitevectores];
+    final float[][] mg = new float[3][limitevectores];
+    double [][] GPS = new double[2][limitevectores];
+    String[] TSTAMP = new String [limitevectores];
 
     private SensorManager sensorManager;
-    int limitevectores=1000000;
-    private final float[][] ac = new float[3][limitevectores];
-    private final float[][] gy = new float[3][limitevectores];
-    double [][] GPS = new double[2][limitevectores];
-
-    String[] TSTAMP = new String [limitevectores];
 
     TextView texto2, texto3, texto4;
     Writer output;
@@ -59,6 +62,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     LocationManager locationManager;
     private String provider;
 
+    File Config = new File("D:\\AndroidStudioProjects\\Dataset_TXT\\app\\src\\main\\java\\com\\example\\dataset_txt");        //ver donde se intala la carpeta para poder ver el archivo
+
     //Minimo tiempo para updates en Milisegundos
     private static final long MIN_CAMBIO_DISTANCIA_PARA_UPDATES = 1; // 1 metros
     //Minimo tiempo para updates en Milisegundos
@@ -69,10 +74,16 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+
         btnGuardarExcel = findViewById(R.id.btnGuardarExcel);
         texto2 =  findViewById(R.id.texto2);
         texto3 =  findViewById(R.id.texto3);
         texto4 =  findViewById(R.id.texto4);
+
+        //Llamo configuraciones
+
+        Lectura();
+
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
 
         btnGuardarExcel.setOnClickListener(new View.OnClickListener() {
@@ -119,6 +130,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     }
 
+
     public void Tomardatos(View view) throws IOException {
 
         Boton1 = 1;
@@ -129,7 +141,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             NombreAchivo = new String("Datos_" + timeStamp_carpeta+ ".txt");
             File file = new File(getExternalFilesDir(null), NombreAchivo);
             FileOutputStream outputStream;
-            textoASalvar = "Timestamp, ax, ay, az, gx, gy, gz, Latitud, Longitud  \n";
+            textoASalvar = "Timestamp, ax, ay, az, gx, gy, gz, mx, my, mz, Latitud, Longitud  \n";
             outputStream = new FileOutputStream(file);
             outputStream.write(textoASalvar.getBytes());
             outputStream.close();
@@ -153,8 +165,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             if (TSTAMP[j]==null){
                 break;
             }
-                textoASalvar = TSTAMP[j] + ";" + ac[0][j] + ";" + ac[1][j] + ";" + ac[2][j] + ";" + gy[0][j] + ";" + gy[1][j] + ";" + gy[2][j] + ";"
-                        + GPS[0][j] + ";" + GPS[1][j] + ";" + "\n";
+                textoASalvar = TSTAMP[j] + ";" + ac[0][j] + ";" + ac[1][j] + ";" + ac[2][j] + ";" +
+                        gy[0][j] + ";" + gy[1][j] + ";" + gy[2][j] + ";"+
+                        mg[0][j] + ";" + mg[1][j] + ";" + mg[2][j] + ";"+
+                        GPS[0][j] + ";" + GPS[1][j] + ";" + "\n";
                 ImprimoDatos();
                 textoASalvar = null;
 
@@ -191,6 +205,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         Sensor gyroscope = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
         if (gyroscope != null) {
             sensorManager.registerListener(this, gyroscope,
+                    SensorManager.SENSOR_DELAY_FASTEST);
+        }
+        Sensor magnetic = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
+        if (gyroscope != null) {
+            sensorManager.registerListener(this, magnetic,
                     SensorManager.SENSOR_DELAY_FASTEST);
         }
         //GPS
@@ -240,11 +259,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 ac [1][j] = sensorEvent.values[1];
                 ac [2][j] = sensorEvent.values[2];
                 j++;
-                // Aca directamente lo guardo
-                /*timeStamp = new SimpleDateFormat("dd/MM/yyyy_HH:mm:ss.SSSSSSS").format(new Date());
-                textoASalvar = timeStamp + "," + ac[0] + "," + ac[1] + "," + ac[2] + "," + " " + "," + " " + "," + " " + ","
-                        + " " + "," + " " + "," + "\n";
-                ImprimoDatos();*/
+
             }
 
             if (sensorEvent.sensor.getType() == Sensor.TYPE_GYROSCOPE) {
@@ -255,10 +270,15 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 gy [2][j]= sensorEvent.values[2];
                 j++;
 
-                /*timeStamp = new SimpleDateFormat("dd/MM/yyyy_HH:mm:ss.SSSSSSS").format(new Date());
-                textoASalvar = timeStamp + "," + "" + "," + " " + "," + " " + "," + gy[0] + "," + gy[1] + "," + gy[2] + ","
-                        + " " + ", " + " " + ", " + "\n";
-                ImprimoDatos();*/
+            }
+            if (sensorEvent.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) {
+                //System.arraycopy(sensorEvent.values, 0, gy,0, gy.length);
+                TSTAMP [j] = new SimpleDateFormat("dd/MM/yyyy_HH:mm:ss.SSSSSSS").format(new Date());
+                mg [0][j]= sensorEvent.values[0];
+                mg [1][j]= sensorEvent.values[1];
+                mg [2][j]= sensorEvent.values[2];
+                j++;
+
             }
         } else if(Boton1 == 1 && Boton2 == 0 && j>=limitevectores){
             Boton1=0;Boton2=1;
@@ -320,6 +340,46 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
             //Toast.makeText(getApplicationContext(), "FIN DE TOMA DE DATOS, PRESIONE GUARDAR PARA TERMINAR EL PROCESO", Toast.LENGTH_LONG).show();
         }
+    }
+    public void Lectura(){
+        File archivo;
+        FileReader fr;
+        BufferedReader br;
+        InputStream inputStream = getResources().openRawResource(R.raw.registro);
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        String linea = null;
+
+
+
+        try {
+            /*
+            InputStream inputStream = getResources().openRawResource(R.raw.registro);
+            archivo = new File("D:\\AndroidStudioProjects\\Dataset_TXT\\app\\src\\main\\java\\com\\example\\dataset_txt");        //ver donde se intala la carpeta para poder ver el archivo
+
+            fr = new FileReader(String.valueOf(inputStream));
+            br = new BufferedReader(fr);*/
+
+            int i= inputStream.read();
+
+            while (i != -1){
+                byteArrayOutputStream.write(i);
+                i = inputStream.read();
+                linea=byteArrayOutputStream.toString()+"\n";
+            }
+            inputStream.close();
+
+           /* String linea;
+            while ((linea = br.readLine())!= null){
+                texto2.append(linea);
+
+            }
+            br.close();
+            fr.close();
+*/
+        } catch (Exception e){
+            Toast.makeText(getApplicationContext(), "Hubo un error al leer el archivo", Toast.LENGTH_LONG).show();
+        }
+        //texto2.append(linea);
     }
 }
 
